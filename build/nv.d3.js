@@ -1,4 +1,4 @@
-/* nvd3 version 1.8.3-dev (https://github.com/novus/nvd3) 2016-04-26 */
+/* nvd3 version 1.8.3-dev (https://github.com/novus/nvd3) 2016-06-09 */
 (function(){
 
 // set up main nv object
@@ -9903,15 +9903,17 @@ nv.models.multiChart = function() {
                         });
                     });
 
+                    var defaultValueFormatter = function(d,i) {
+                        var yAxis = allData[i].yAxis;
+                        return d == null ? "N/A" : yAxis.tickFormat()(d);
+                    };
+
                     interactiveLayer.tooltip
                     .chartContainer(chart.container.parentNode)
                     .headerFormatter(function(d, i) {
                         return xAxis.tickFormat()(d, i);
                     })
-                    .valueFormatter(function(d,i) {
-                        var yAxis = allData[i].yAxis;
-                        return d === null ? "N/A" : yAxis.tickFormat()(d);
-                    })
+                    .valueFormatter(interactiveLayer.tooltip.valueFormatter() || defaultValueFormatter)
                     .data({
                         value: chart.x()( singlePoint,pointIndex ),
                         index: pointIndex,
@@ -12097,14 +12099,16 @@ nv.models.scatter = function() {
                             if (needsUpdate || !data[d.series]) return 0; //check if this is a dummy point
                             var series = data[d.series],
                                 point  = series.values[i];
-
+                            var element = this;
                             dispatch.elementClick({
                                 point: point,
                                 series: series,
                                 pos: [x(getX(point, i)) + margin.left, y(getY(point, i)) + margin.top], //TODO: make this pos base on the page
                                 relativePos: [x(getX(point, i)) + margin.left, y(getY(point, i)) + margin.top],
                                 seriesIndex: d.series,
-                                pointIndex: i
+                                pointIndex: i,
+                                event: d3.event,
+                                element: element
                             });
                         })
                         .on('dblclick', function(d,i) {
@@ -14138,6 +14142,8 @@ nv.models.sunburst = function() {
         , key = function(d,i){return d.name;}
         , groupColorByParent = true
         , duration = 500
+        , clickAction = zoomClick
+        , dblClickAction = zoomClick
         , dispatch = d3.dispatch('chartClick', 'elementClick', 'elementDblClick', 'elementMousemove', 'elementMouseover', 'elementMouseout', 'renderEnd');
 
     //============================================================
@@ -14354,17 +14360,18 @@ nv.models.sunburst = function() {
                 .attr("d", arc)
                 .style("fill", function (d) {
                     if (d.color) {
-                        return d.color;
+                        return d.color(d);
                     }
                     else if (groupColorByParent) {
-                        return color((d.children ? d : d.parent).name);
+                        return color((d.parent ? d.parent : d));
                     }
                     else {
-                        return color(d.name);
+                        return color(d);
                     }
                 })
                 .style("stroke", "#FFF")
-                .on("click", zoomClick)
+                .on("click", clickAction)
+                .on("dblclick", dblClickAction)
                 .on('mouseover', function(d,i){
                     d3.select(this).classed('hover', true).style('opacity', 0.8);
                     dispatch.elementMouseover({
@@ -14470,6 +14477,8 @@ nv.models.sunburst = function() {
         labelThreshold: {get: function(){return labelThreshold;}, set: function(_){labelThreshold=_}},
         sort: {get: function(){return sort;}, set: function(_){sort=_}},
         key: {get: function(){return key;}, set: function(_){key=_}},
+        clickAction: {get: function(){return clickAction;}, set: function(_){clickAction=_}},
+        dblClickAction: {get: function(){return dblClickAction;}, set: function(_){dblClickAction=_}},
         // options that require extra logic in the setter
         margin: {get: function(){return margin;}, set: function(_){
             margin.top    = _.top    != undefined ? _.top    : margin.top;
