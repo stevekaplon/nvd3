@@ -1,4 +1,4 @@
-/* nvd3 version 1.8.3-dev (https://github.com/novus/nvd3) 2016-06-09 */
+/* nvd3 version 1.8.3-dev (https://github.com/novus/nvd3) 2016-07-13 */
 (function(){
 
 // set up main nv object
@@ -12528,6 +12528,10 @@ nv.models.scatterChart = function() {
 
             // background for pointer events
             gEnter.append('rect').attr('class', 'nvd3 nv-background').style("pointer-events","none");
+
+            g.select('rect.nv-background')
+                .attr('width', availableWidth)
+                .attr('height', availableHeight);
 
             gEnter.append('g').attr('class', 'nv-x nv-axis');
             gEnter.append('g').attr('class', 'nv-y nv-axis');
